@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة حجر ورقة مقص</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            direction: rtl;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .setup-phase {
+            margin-bottom: 30px;
+        }
+
+        .rounds-input {
+            margin: 20px 0;
+        }
+
+        .rounds-input label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .rounds-input input {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+            width: 150px;
+            transition: border-color 0.3s ease;
+        }
+
+        .rounds-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .choices {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .choice-btn {
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 3rem;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .choice-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .choice-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .play-btn, .start-btn, .rematch-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .play-btn:hover, .start-btn:hover, .rematch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-area {
+            display: none;
+        }
+
+        .battle-arena {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 40px 0;
+            min-height: 200px;
+        }
+
+        .player-choice, .computer-choice {
+            text-align: center;
+            flex: 1;
+        }
+
+        .choice-display {
+            font-size: 4rem;
+            margin: 20px 0;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s ease;
+        }
+
+        .choice-display.animate {
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 60%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            80% { transform: translateY(-10px); }
+        }
+
+        @keyframes countdown {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        .countdown-overlay {
+            display: none;
+        }
+
+        .countdown-display {
+            color: white;
+            font-size: 6rem;
+            font-weight: bold;
+            text-align: center;
+            animation: countdown 1s ease-in-out;
+        }
+
+        .choice-display.shaking {
+            animation: shake 0.1s infinite;
+        }
+
+        .vs {
+            font-size: 2rem;
+            color: #667eea;
+            font-weight: bold;
+            align-self: center;
+        }
+
+        .round-result {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .round-result.show {
+            opacity: 1;
+        }
+
+        .win {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .lose {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .draw {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+        }
+
+        .score-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .score-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-right: 5px solid #667eea;
+        }
+
+        .score-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .score-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .final-result {
+            display: none;
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .game-info {
+            background: rgba(103, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-right: 4px solid #667eea;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+                margin: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .choices {
+                gap: 10px;
+            }
+
+            .choice-btn {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+                padding: 10px;
+            }
+
+            .battle-arena {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .vs {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 لعبة حجر ورقة مقص</h1>
+        
+        <div class="setup-phase" id="setupPhase">
+            <div class="rounds-input">
+                <label for="roundsCount">كم جولة تريد أن تلعب؟</label>
+                <input type="number" id="roundsCount" min="1" max="20" value="3">
+            </div>
+            <button class="start-btn" onclick="startGame()">ابدأ اللعبة</button>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div class="game-info">
+                <div>الجولة: <span id="currentRound">1</span> من <span id="totalRounds">3</span></div>
+            </div>
+
+            <div class="choices">
+                <div class="choice-btn" data-choice="rock" onclick="selectChoice('rock')">✊</div>
+                <div class="choice-btn" data-choice="paper" onclick="selectChoice('paper')">🖐️</div>
+                <div class="choice-btn" data-choice="scissors" onclick="selectChoice('scissors')">✌️</div>
+            </div>
+
+            <button class="play-btn" id="playBtn" onclick="playRound()" disabled>العب!</button>
+
+            <div class="battle-arena" id="battleArena">
+                <div class="player-choice">
+                    <h3>اختيارك</h3>
+                    <div class="choice-display" id="playerDisplay">؟</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="computer-choice">
+                    <h3>اختيار الكمبيوتر</h3>
+                    <div class="choice-display" id="computerDisplay">؟</div>
+                </div>
+            </div>
+
+            <div class="round-result" id="roundResult"></div>
+
+            <div class="score-board">
+                <div class="score-item">
+                    <div class="score-number" id="winsCount">0</div>
+                    <div class="score-label">انتصارات</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-number" id="lossesCount">0</div>
+                    <div class="score-label">هزائم</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-number" id="drawsCount">0</div>
+                    <div class="score-label">تعادل</div>
+                </div>
+            </div>
+
+            <div class="final-result" id="finalResult"></div>
+
+            <button class="rematch-btn hidden" id="rematchBtn" onclick="rematch()">إعادة المباراة</button>
+        </div>
+
+        <!-- Countdown Overlay -->
+        <div class="countdown-overlay" id="countdownOverlay">
+            <div class="countdown-display" id="countdownDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            totalRounds: 3,
+            currentRound: 1,
+            playerChoice: '',
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            gameEnded: false
+        };
+
+        const choices = {
+            rock: '✊',
+            paper: '🖐️',
+            scissors: '✌️'
+        };
+
+        const choiceNames = {
+            rock: 'حجر',
+            paper: 'ورقة',
+            scissors: 'مقص'
+        };
+
+        function startGame() {
+            const rounds = parseInt(document.getElementById('roundsCount').value);
+            if (rounds < 1 || rounds > 20) {
+                alert('يرجى إدخال عدد جولات بين 1 و 20');
+                return;
+            }
+
+            gameState.totalRounds = rounds;
+            gameState.currentRound = 1;
+            gameState.wins = 0;
+            gameState.losses = 0;
+            gameState.draws = 0;
+            gameState.gameEnded = false;
+
+            document.getElementById('setupPhase').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            document.getElementById('totalRounds').textContent = rounds;
+            
+            updateDisplay();
+        }
+
+        function selectChoice(choice) {
+            // Remove previous selection
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Add selection to clicked button
+            document.querySelector(`[data-choice="${choice}"]`).classList.add('selected');
+            
+            gameState.playerChoice = choice;
+            document.getElementById('playBtn').disabled = false;
+        }
+
+        function playRound() {
+            if (!gameState.playerChoice || gameState.gameEnded) return;
+
+            // Disable play button during animation
+            document.getElementById('playBtn').disabled = true;
+
+            // Generate computer choice
+            const computerChoices = ['rock', 'paper', 'scissors'];
+            const computerChoice = computerChoices[Math.floor(Math.random() * computerChoices.length)];
+
+            // Start countdown animation
+            startCountdownAnimation(gameState.playerChoice, computerChoice);
+        }
+
+        function startCountdownAnimation(playerChoice, computerChoice) {
+            const playerDisplay = document.getElementById('playerDisplay');
+            const computerDisplay = document.getElementById('computerDisplay');
+            
+            // Reset displays and add shaking animation
+            playerDisplay.textContent = '✊';
+            computerDisplay.textContent = '✊';
+            playerDisplay.classList.add('shaking');
+            computerDisplay.classList.add('shaking');
+
+            // Create audio context for sound effects
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Function to create beep sound
+            function playBeep(frequency, duration) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            }
+
+            // Gesture sequence only
+            const gestureSequence = [
+                { gesture: '✊', sound: 600, duration: 700 },
+                { gesture: '🖐️', sound: 600, duration: 700 },
+                { gesture: '✌️', sound: 1000, duration: 700 }
+            ];
+
+            let currentStep = 0;
+
+            function nextStep() {
+                if (currentStep < gestureSequence.length) {
+                    const step = gestureSequence[currentStep];
+                    
+                    // Play sound
+                    if (step.sound) {
+                        playBeep(step.sound, 0.2);
+                    }
+                    
+                    // Show gesture animation directly on the displays
+                    playerDisplay.textContent = step.gesture;
+                    computerDisplay.textContent = step.gesture;
+                    
+                    currentStep++;
+                    setTimeout(nextStep, step.duration);
+                } else {
+                    // End animation, show final results
+                    playerDisplay.classList.remove('shaking');
+                    computerDisplay.classList.remove('shaking');
+                    
+                    // Show final choices with animation
+                    showFinalChoices(playerChoice, computerChoice);
+                }
+            }
+
+            // Start gesture sequence
+            nextStep();
+        }
+
+        function showFinalChoices(playerChoice, computerChoice) {
+            const playerDisplay = document.getElementById('playerDisplay');
+            const computerDisplay = document.getElementById('computerDisplay');
+
+            // Add final animation class
+            playerDisplay.classList.add('animate');
+            computerDisplay.classList.add('animate');
+
+            // Show final choices
+            playerDisplay.textContent = choices[playerChoice];
+            computerDisplay.textContent = choices[computerChoice];
+
+            // Play final sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 440;
+            oscillator.type = 'triangle';
+            
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+
+            // Remove animation class after animation
+            setTimeout(() => {
+                playerDisplay.classList.remove('animate');
+                computerDisplay.classList.remove('animate');
+                
+                // Determine winner and show result
+                const result = determineWinner(playerChoice, computerChoice);
+                updateScore(result);
+                showRoundResult(result, playerChoice, computerChoice);
+                
+                // Check if game ended
+                if (gameState.currentRound >= gameState.totalRounds) {
+                    endGame();
+                } else {
+                    gameState.currentRound++;
+                    setTimeout(() => {
+                        resetForNextRound();
+                    }, 2000);
+                }
+            }, 600);
+        }
+
+        function determineWinner(playerChoice, computerChoice) {
+            if (playerChoice === computerChoice) return 'draw';
+            
+            const winConditions = {
+                rock: 'scissors',
+                paper: 'rock',
+                scissors: 'paper'
+            };
+
+            return winConditions[playerChoice] === computerChoice ? 'win' : 'lose';
+        }
+
+        function updateScore(result) {
+            if (result === 'win') gameState.wins++;
+            else if (result === 'lose') gameState.losses++;
+            else gameState.draws++;
+
+            document.getElementById('winsCount').textContent = gameState.wins;
+            document.getElementById('lossesCount').textContent = gameState.losses;
+            document.getElementById('drawsCount').textContent = gameState.draws;
+        }
+
+        function showRoundResult(result, playerChoice, computerChoice) {
+            const resultDiv = document.getElementById('roundResult');
+            let message = '';
+
+            if (result === 'win') {
+                message = `🎉 فزت! ${choiceNames[playerChoice]} يهزم ${choiceNames[computerChoice]}`;
+                resultDiv.className = 'round-result win show';
+            } else if (result === 'lose') {
+                message = `😞 خسرت! ${choiceNames[computerChoice]} يهزم ${choiceNames[playerChoice]}`;
+                resultDiv.className = 'round-result lose show';
+            } else {
+                message = `🤝 تعادل! كلاكما اختار ${choiceNames[playerChoice]}`;
+                resultDiv.className = 'round-result draw show';
+            }
+
+            resultDiv.textContent = message;
+        }
+
+        function resetForNextRound() {
+            // Clear selections
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Reset displays
+            document.getElementById('playerDisplay').textContent = '؟';
+            document.getElementById('computerDisplay').textContent = '؟';
+            
+            // Hide round result with fade out
+            const roundResult = document.getElementById('roundResult');
+            roundResult.classList.remove('show');
+            setTimeout(() => {
+                roundResult.textContent = '';
+            }, 300);
+            
+            // Reset game state
+            gameState.playerChoice = '';
+            document.getElementById('playBtn').disabled = true;
+            
+            // Update round counter
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('currentRound').textContent = gameState.currentRound;
+        }
+
+        function endGame() {
+            gameState.gameEnded = true;
+            const finalResultDiv = document.getElementById('finalResult');
+            let finalMessage = '';
+
+            if (gameState.wins > gameState.losses) {
+                finalMessage = `🏆 مبروك! فزت بالمباراة! (${gameState.wins} انتصار - ${gameState.losses} هزيمة - ${gameState.draws} تعادل)`;
+                finalResultDiv.className = 'final-result win';
+            } else if (gameState.losses > gameState.wins) {
+                finalMessage = `😔 خسرت المباراة! (${gameState.wins} انتصار - ${gameState.losses} هزيمة - ${gameState.draws} تعادل)`;
+                finalResultDiv.className = 'final-result lose';
+            } else {
+                finalMessage = `🤝 انتهت المباراة بالتعادل! (${gameState.wins} انتصار - ${gameState.losses} هزيمة - ${gameState.draws} تعادل)`;
+                finalResultDiv.className = 'final-result draw';
+            }
+
+            finalResultDiv.textContent = finalMessage;
+            finalResultDiv.style.display = 'block';
+            document.getElementById('rematchBtn').classList.remove('hidden');
+            document.getElementById('playBtn').style.display = 'none';
+        }
+
+        function rematch() {
+            // Reset everything
+            document.getElementById('setupPhase').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('finalResult').style.display = 'none';
+            document.getElementById('rematchBtn').classList.add('hidden');
+            document.getElementById('playBtn').style.display = 'inline-block';
+            
+            // Clear displays
+            document.getElementById('playerDisplay').textContent = '؟';
+            document.getElementById('computerDisplay').textContent = '؟';
+            document.getElementById('roundResult').textContent = '';
+            
+            // Reset scores display
+            document.getElementById('winsCount').textContent = '0';
+            document.getElementById('lossesCount').textContent = '0';
+            document.getElementById('drawsCount').textContent = '0';
+            
+            // Clear selections
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+        }
+    </script>
+</body>
+</html>
